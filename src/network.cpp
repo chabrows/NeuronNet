@@ -1,5 +1,6 @@
 #include "network.h"
 #include "random.h"
+using namespace std;
 
 void Network::resize(const size_t &n, double inhib) {
     size_t old = size();
@@ -128,3 +129,114 @@ void Network::print_traj(const int time, const std::map<std::string, size_t> &_n
             }
     (*_out) << std::endl;
 }
+//////////////////////////////////////////////////////////////////////////////////////
+std::pair<size_t, double> Network::degree(const size_t& i) const{
+
+	double sum=0;
+	vector<std::pair<size_t, double> > tab = neighbors(i); 
+	int nb_connexion = tab.size();
+	
+	for (auto& x: tab){
+
+			double strength = std::get<1>(x);
+	
+			sum += strength;
+	}
+		
+	auto incoming_neuron_info = std::make_pair(nb_connexion, sum);
+	
+	return incoming_neuron_info;
+}
+
+
+
+
+
+
+std::vector<std::pair<size_t, double> > Network::neighbors(const size_t& i) const{
+	
+	vector<pair<size_t, double>> tab;
+	
+	map<pair<long unsigned int, long unsigned int >, double>::const_iterator iterateur;
+
+	iterateur = links.lower_bound({i, 0});
+	
+	while (iterateur!=links.end()  and get<0>(iterateur->first)== i ){
+		
+			size_t index_incoming = get<1>(iterateur-> first);
+			
+			double intensity = iterateur->second;
+
+			auto incoming_neuron = std::make_pair(index_incoming, intensity);
+
+			tab.push_back(incoming_neuron);
+			
+			++iterateur;
+	}
+	return tab;
+}
+
+
+
+
+
+
+set<size_t> Network::step(const std::vector<double>& input_thal){
+	
+	set<size_t> indices_firing_neurons;
+	
+	 
+	double input_thal_final;
+	
+	double sum=0;
+	double I=0; 
+	
+	double I_tot=0; 
+	
+	for(size_t i=0; i<input_thal.size(); ++i){
+	 
+		if(neurons[i].firing()){
+			
+			indices_firing_neurons.insert(i);
+			
+		}
+		
+		
+		if(neurons[i].is_inhibitory()){
+			I = (0.4*input_thal[i]);
+		}else {
+			I = (1*input_thal[i]);
+		}
+		
+		vector<std::pair<size_t, double> > tab = neighbors(i); 
+			
+		for(auto& x : tab){
+				
+			size_t index_incoming = std::get<0>(x);
+				
+			if(neurons[index_incoming].firing()){
+			
+				sum += std::get<1>(x);
+			}
+		}
+		
+		I_tot= sum + I;
+		
+		neurons[i].input(I_tot);
+		
+		if(neurons[i].firing()){
+			neurons[i].reset(); 
+			
+		}else{
+			neurons[i].step();
+		}
+			
+	}
+		
+	return indices_firing_neurons;
+}
+	
+	
+
+
+

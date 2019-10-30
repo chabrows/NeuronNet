@@ -41,6 +41,7 @@ public:
 ///@{
     void shuffle(std::vector<size_t> &_v) {std::shuffle(_v.begin(), _v.end(), rng);}
 ///@}
+
      
 private:
     std::mt19937 rng;
